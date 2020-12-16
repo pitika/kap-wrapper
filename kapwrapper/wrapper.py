@@ -19,7 +19,7 @@ class Wrapper:
         return self.__parse_kap(response.content)
 
     def get_funds(self,fund_group: FundGroup, liquidated = False):
-        response = requests.get(url="https://www.kap.org.tr/tr/api/fund/" + fund_group.value + "/T" if liquidated else "/Y")
+        response = requests.get(url="https://www.kap.org.tr/tr/api/fund/" + fund_group.value + ("/T" if liquidated else "/Y"))
         return json.loads(response.text)
 
     def get_portfoy_companies(self,fund_group: FundGroup):
