@@ -26,29 +26,36 @@ class Wrapper:
         response = requests.get(url="https://www.kap.org.tr/tr/api/fundMembers/" + fund_group.value)
         return json.loads(response.text)
 
-    def __kap_query(self, fund_oid, subject: Subject, from_date, to_date):
+    def __kap_query(self, fund_oid, fundGroup: FundGroup, subject: Subject, from_date, to_date):
+        fundTypeList = []
+        if(fundGroup == FundGroup.YATIRIM_FONLARI):
+            fundTypeList.append("SYF")
+            fundTypeList.append("KGF")
+        else:
+            fundTypeList.append(fundGroup.value)
         data = {
             "fromDate": from_date,
             "toDate": to_date,
             "subjectList": [subject.value],
-            "fundOidList": [fund_oid]
+            "fundOidList": [fund_oid],
+            "fundTypeList": fundTypeList
         }
 
         response = requests.post(url="https://www.kap.org.tr/tr/api/fundDisclosureQuery", json=data)
         
         return json.loads(response.text)
 
-    def get_last_portfoy_url(self, fund_oid):
+    def get_last_portfoy_url(self, fund_oid, fundGroup: FundGroup):
         from_date = (datetime.today() - timedelta(days=40)).strftime("%Y-%m-%d")
         to_date = datetime.today().strftime("%Y-%m-%d")
-        data = self.__kap_query(fund_oid, Subject.PORTFOY_DAGILIM_RAPORU, from_date, to_date)
+        data = self.__kap_query(fund_oid, fundGroup, Subject.PORTFOY_DAGILIM_RAPORU, from_date, to_date)
         
         response = requests.get(url="https://www.kap.org.tr/tr/Bildirim/" + str(data[0]["disclosureIndex"]))
 
         tree = html.fromstring(response.content)
         attachments = tree.xpath('//*[@id="disclosureContent"]/div/div[4]/a')
         
-        return ["https://www.kap.org.tr" + a.get("href") for a in attachments if a.get("href") != "#"]
+        return {"date":data[0]["publishDate"], "attachments": ["https://www.kap.org.tr" + a.get("href") for a in attachments if a.get("href") != "#"]}
 
 
     def __get_value(self, tree, xpath):
